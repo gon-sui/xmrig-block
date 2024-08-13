@@ -32,13 +32,13 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Set up and load the XDP program
     let program = bpf.program("xdp_log").unwrap();
-    let mut xdp_program: &mut Xdp = program.try_into()?; // Changed this line
+    let mut xdp_program: &mut Xdp = program.try_into()?;
     xdp_program.load()?;
     xdp_program.attach(&opt.iface, XdpFlags::default())?;
 
     // Create the AsyncPerfEventArray
     let map = bpf.map_mut("EVENTS").unwrap();
-    let perf_array = Arc::new(AsyncPerfEventArray::try_from(map)?); // Changed this line
+    let perf_array = Arc::new(AsyncPerfEventArray::try_from(map)?);
 
     // Spawn async tasks for each CPU
     for cpu_id in online_cpus()? {
