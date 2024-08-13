@@ -9,7 +9,7 @@ use network_types::{eth::{EthHdr, EtherType}, ip::{Ipv4Hdr, IpProto}, tcp::TcpHd
 const TARGET_SIZE_1: usize = 430;
 const TARGET_SIZE_2: usize = 60;
 const SIZE_TOLERANCE: usize = 5;
-const MAX_PAYLOAD_OUTPUT: usize = 32;  // 出力するペイロードの最大バイト数
+const MAX_PAYLOAD_OUTPUT: usize = 8;  // 出力するペイロードの最大バイト数
 
 #[xdp]
 pub fn xdp_log(ctx: XdpContext) -> u32 {
