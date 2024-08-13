@@ -125,10 +125,10 @@ dependencies = [
 [[package]]
 name = "aya"
 version = "0.12.0"
-source = "git+https://github.com/aya-rs/aya?branch=main#3d57d358e40591acf23dfde740697fbfff026410"
+source = "git+https://github.com/aya-rs/aya#3d57d358e40591acf23dfde740697fbfff026410"
 dependencies = [
  "assert_matches",
- "aya-obj 0.1.0 (git+https://github.com/aya-rs/aya?branch=main)",
+ "aya-obj 0.1.0 (git+https://github.com/aya-rs/aya)",
  "bitflags",
  "bytes",
  "lazy_static",
@@ -142,9 +142,9 @@ dependencies = [
 [[package]]
 name = "aya-log"
 version = "0.2.0"
-source = "git+https://github.com/aya-rs/aya?branch=main#3d57d358e40591acf23dfde740697fbfff026410"
+source = "git+https://github.com/aya-rs/aya#3d57d358e40591acf23dfde740697fbfff026410"
 dependencies = [
- "aya 0.12.0 (git+https://github.com/aya-rs/aya?branch=main)",
+ "aya 0.12.0 (git+https://github.com/aya-rs/aya)",
  "aya-log-common",
  "bytes",
  "log",
@@ -155,7 +155,7 @@ dependencies = [
 [[package]]
 name = "aya-log-common"
 version = "0.1.14"
-source = "git+https://github.com/aya-rs/aya?branch=main#3d57d358e40591acf23dfde740697fbfff026410"
+source = "git+https://github.com/aya-rs/aya#3d57d358e40591acf23dfde740697fbfff026410"
 dependencies = [
  "num_enum",
 ]
@@ -177,7 +177,7 @@ dependencies = [
 [[package]]
 name = "aya-obj"
 version = "0.1.0"
-source = "git+https://github.com/aya-rs/aya?branch=main#3d57d358e40591acf23dfde740697fbfff026410"
+source = "git+https://github.com/aya-rs/aya#3d57d358e40591acf23dfde740697fbfff026410"
 dependencies = [
  "bytes",
  "core-error",
@@ -733,11 +733,11 @@ name = "xdp-log"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "aya 0.12.0 (git+https://github.com/aya-rs/aya?branch=main)",
+ "aya 0.12.0 (git+https://github.com/aya-rs/aya)",
  "aya-log",
+ "bytes",
  "clap",
  "env_logger",
- "libc",
  "log",
  "tokio",
  "xdp-log-common",
