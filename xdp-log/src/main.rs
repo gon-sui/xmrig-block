@@ -32,7 +32,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Set up and load the XDP program
     let program = bpf.program("xdp_log").unwrap();
-    let mut xdp_program: &mut Xdp = program.try_into_mut()?; // Changed this line
+    let mut xdp_program: &mut Xdp = program.try_into()?; // Changed this line
     xdp_program.load()?;
     xdp_program.attach(&opt.iface, XdpFlags::default())?;
 
