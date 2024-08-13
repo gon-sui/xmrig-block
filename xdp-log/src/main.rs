@@ -1,5 +1,5 @@
 use aya::programs::{Xdp, XdpFlags};
-use aya::{include_bytes_aligned, Bpf};
+use aya::{include_bytes_aligned, Ebpf};
 use aya_log::EbpfLogger;
 use clap::Parser;
 use log::{info, warn};
@@ -16,18 +16,17 @@ async fn main() -> Result<(), anyhow::Error> {
     let opt = Opt::parse();
     env_logger::init();
 
-    // eBPFオブジェクトファイルをコンパイル時に生のバイトとして含め、実行時にロードします。
+    // Bpf::load の代わりに Ebpf::load を使用
     #[cfg(debug_assertions)]
-    let mut bpf = Bpf::load(include_bytes_aligned!(
+    let mut bpf = Ebpf::load(include_bytes_aligned!(
         "../../target/bpfel-unknown-none/debug/xdp-log"
     ))?;
     #[cfg(not(debug_assertions))]
-    let mut bpf = Bpf::load(include_bytes_aligned!(
+    let mut bpf = Ebpf::load(include_bytes_aligned!(
         "../../target/bpfel-unknown-none/release/xdp-log"
     ))?;
 
     if let Err(e) = EbpfLogger::init(&mut bpf) {
-        // EbpfLogger::init() の代わりに、以下のようにログを初期化します
         warn!("eBPFロガーの初期化に失敗しました: {}", e);
     }
 
@@ -35,7 +34,7 @@ async fn main() -> Result<(), anyhow::Error> {
     program.load()?;
     program.attach(&opt.iface, XdpFlags::default())?;
 
-    info!("Ctrl-C waitng...");
+    info!("Ctrl-C waiting...");
     signal::ctrl_c().await?;
     info!("finish...");
 
