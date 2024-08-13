@@ -1,0 +1,21 @@
+[package]
+name = "xdp-log"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+
+[dependencies]
+aya = { git = "https://github.com/aya-rs/aya", branch = "main" }
+aya-log = { git = "https://github.com/aya-rs/aya", branch = "main" }
+clap = { version = "4.1", features = ["derive"] }
+xdp-log-common = { path = "../xdp-log-common", features = ["user"] }
+anyhow = "1"
+env_logger = "0.10"
+libc = "0.2"
+log = "0.4"
+tokio = { version = "1.25", features = ["macros", "rt", "rt-multi-thread", "net", "signal"] }
+
+[[bin]]
+name = "xdp-log"
+path = "src/main.rs"
