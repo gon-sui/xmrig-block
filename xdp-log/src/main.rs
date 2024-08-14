@@ -1,6 +1,5 @@
 use aya::programs::{Xdp, XdpFlags};
 use aya::{include_bytes_aligned, Bpf};
-use aya::util::online_cpus;
 use aya_log::BpfLogger;
 use anyhow::Context;
 use log::{info, warn};
@@ -34,13 +33,14 @@ async fn main() -> Result<(), anyhow::Error> {
     let program: &mut Xdp = bpf.program_mut("xdp_filter").unwrap().try_into()?;
     program.load()?;
 
-    // 指定されたインターフェースに XDP プログラムをアタッチ
-    program.attach(&interface, XdpFlags::default())
-        .context("failed to attach the XDP program with default flags - try changing XdpFlags::default() to XdpFlags::SKB_MODE")?;
+    // 指定されたインターフェースに XDP プログラムをアタッチ（SKB_MODEを使用）
+    program.attach(&interface, XdpFlags::SKB_MODE)
+        .context("failed to attach the XDP program with SKB_MODE")?;
 
-    info!("Waiting for Ctrl-C...");
-    info!("eBPF program is filtering TCP packets.");
-    info!("It will drop packets with payload size 56-76 bytes containing '{{' (0x7b) and 'jsonrpc' in hex.");
+    info!("eBPF program loaded and attached to {} in SKB_MODE", interface);
+    info!("Filtering TCP packets with payload size 56-76 bytes");
+    info!("Press Ctrl+C to exit");
+
     signal::ctrl_c().await?;
     info!("Exiting...");
 
