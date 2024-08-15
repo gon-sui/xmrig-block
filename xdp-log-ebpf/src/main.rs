@@ -52,7 +52,6 @@ fn try_xdp_filter(ctx: XdpContext) -> Result<u32, ()> {
         return Ok(xdp_action::XDP_PASS);
     }
     
-    // サイズ条件に合致しないパケットはpass
     info!(&ctx, "Dropping packet with unexpected size: {}", payload_size);
     Ok(xdp_action::XDP_DROP)
 }
