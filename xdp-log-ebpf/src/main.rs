@@ -6,7 +6,7 @@ use aya_log_ebpf::info;
 use core::mem;
 use network_types::{eth::{EthHdr, EtherType}, ip::{Ipv4Hdr, IpProto}, tcp::TcpHdr};
 
-const MAX_INSPECT_BYTES: usize = 29; // 検査する最大バイト数
+const MAX_INSPECT_BYTES: usize = 20; // 検査する最大バイト数
 
 #[xdp]
 pub fn xdp_filter(ctx: XdpContext) -> u32 {
@@ -38,7 +38,7 @@ fn try_xdp_filter(ctx: XdpContext) -> Result<u32, ()> {
     let payload_offset = EthHdr::LEN + Ipv4Hdr::LEN + TcpHdr::LEN;
     
     // サーバーからのパケットサイズチェック (430 ± 10 バイト)
-    if payload_size >= 430 && payload_size <= 440 {
+    if payload_size >= 420 && payload_size <= 440 {
         if check_payload_for_jsonrpc_hex(&ctx, payload_offset, payload_size)? {
             info!(&ctx, "Dropping server packet containing 'jsonrpc' in hex");
             return Ok(xdp_action::XDP_DROP);
@@ -46,15 +46,25 @@ fn try_xdp_filter(ctx: XdpContext) -> Result<u32, ()> {
         return Ok(xdp_action::XDP_PASS);
     }
 
+    // クライアントからのパケットサイズチェック (66 ± 10 バイト)
+    if payload_size >= 56 && payload_size <= 76 {
+        info!(&ctx, "Passing client packet with size: {}", payload_size);
+        return Ok(xdp_action::XDP_PASS);
+    }
+    
     // サイズ条件に合致しないパケットはpass
-    info!(&ctx, "passing packet with unexpected size: {}", payload_size);
+    info!(&ctx, "Dropping packet with unexpected size: {}", payload_size);
     Ok(xdp_action::XDP_DROP)
 }
 
 #[inline(always)]
 fn check_payload_for_jsonrpc_hex(ctx: &XdpContext, offset: usize, size: usize) -> Result<bool, ()> {
-    let jsonrpc_hex = [0x6a,0x73,0x6f,0x6e,0x72,0x70,0x63,0x20,0x32,0x2e,0x30,0x20,0x6d,0x65,0x74,0x68,0x6f,0x64,0x20,0x73,0x75,0x62,
-    0x6d,0x69,0x74,0x20,0x70,0x61,0x72,0x61,0x6d,0x73]; // "jsonrpc 2.0 method submit params" in hex
+    let jsonrpc_hex =[0x6a, 0x73, 0x6f, 0x6e, 0x72, 0x70, 0x63, 0x20, // "jsonrpc "
+    0x32, 0x2e, 0x30, 0x20,                         // "2.0 "
+    0x6d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x20,       // "method "
+    0x73, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x20,       // "submit "
+    0x70, 0x61, 0x72, 0x61, 0x6d, 0x73              // "params"
+	]; 
     let mut match_index = 0;
     let inspect_bytes = core::cmp::min(size, MAX_INSPECT_BYTES);
 
