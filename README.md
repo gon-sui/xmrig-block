@@ -1,34 +1,42 @@
-# xdp-log
+# XDPを使用したxmrig通信ブロッカー
 
-## Prerequisites
+このプロジェクトは、eBPFとXDP（eXpress Data Path）を使用して、xmrigとの通信を検出し、ブロックするためのツールです。
 
-1. Install bpf-linker: `cargo install bpf-linker`
+## 機能
 
-## Build eBPF
+- マイニングプールの一般的なポート（3333, 14444, 14433）への通信を検出
+- 検出されたマイニング通信のパケットを自動的にドロップ
+- 通信の詳細（送信元ポート、宛先ポート、パケットサイズ）をログに記録
+
+## 技術的な詳細
+
+このプロジェクトは以下の技術を使用しています：
+
+- Rust言語
+- eBPF（Extended Berkeley Packet Filter）
+- XDP（eXpress Data Path）
+- aya-ebpfフレームワーク
+
+## 必要条件
+
+- Linux カーネル 4.9以上
+- Rust ツールチェーン
+- LLVM/Clang
+- libbpf
+
+## ビルド方法
 
 ```bash
-cargo xtask build-ebpf
+cargo build --release
 ```
 
-To perform a release build you can use the `--release` flag.
-You may also change the target architecture with the `--target` flag.
+## 使用方法
 
-## Build Userspace
+1. プログラムをビルド
+2. 管理者権限で実行
+3. 指定されたネットワークインターフェースにXDPプログラムをアタッチ
 
-```bash
-cargo build
-```
+## 注意事項
 
-## Build eBPF and Userspace
-
-```bash
-cargo xtask build
-```
-
-## Run
-
-```bash
-RUST_LOG=info cargo xtask run
-```
-# xmrig-block
-# XDP
+- このプログラムは管理者権限（root）で実行する必要があります
+- ネットワークインターフェースの設定によっては、XDPの動作モードが制限される場合があります
