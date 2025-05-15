@@ -33,8 +33,30 @@ cargo build --release
 ## 使用方法
 
 1. プログラムをビルド
+```bash
+cargo build --release
+```
+
 2. 管理者権限で実行
+```bash
+sudo ./target/release/xdp-log
+```
+
 3. 指定されたネットワークインターフェースにXDPプログラムをアタッチ
+```bash
+# インターフェース名を指定して実行
+sudo ./target/release/xdp-log -i eth0
+
+# デバッグログを有効にして実行
+sudo RUST_LOG=debug ./target/release/xdp-log -i eth0
+```
+
+4. プログラムの停止
+```bash
+# Ctrl+Cでプログラムを停止
+# または
+sudo killall xdp-log
+```
 
 ## 注意事項
 
