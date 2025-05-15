@@ -6,83 +6,52 @@ use aya_log_ebpf::info;
 use core::mem;
 use network_types::{eth::{EthHdr, EtherType}, ip::{Ipv4Hdr, IpProto}, tcp::TcpHdr};
 
-const MAX_INSPECT_BYTES: usize = 20; // 検査する最大バイト数
+/// マイニングプールのポート番号
+const MINING_PORTS: [u16; 3] = [3333, 14444, 14433];
 
+/// XDPプログラムのエントリーポイント
 #[xdp]
 pub fn xdp_filter(ctx: XdpContext) -> u32 {
-    match try_xdp_filter(ctx) {
+    match try_xdp_filter(&ctx) {
         Ok(ret) => ret,
         Err(_) => xdp_action::XDP_PASS,
     }
 }
 
-fn try_xdp_filter(ctx: XdpContext) -> Result<u32, ()> {
-    let ethhdr: *const EthHdr = unsafe { ptr_at(&ctx, 0)? };
+/// パケットフィルタリングのメインロジック
+fn try_xdp_filter(ctx: &XdpContext) -> Result<u32, ()> {
+    // イーサネットヘッダーの検証
+    let ethhdr: *const EthHdr = unsafe { ptr_at(ctx, 0)? };
     if unsafe { (*ethhdr).ether_type } != EtherType::Ipv4 {
         return Ok(xdp_action::XDP_PASS);
     }
 
-    let ipv4hdr: *const Ipv4Hdr = unsafe { ptr_at(&ctx, EthHdr::LEN)? };
+    // IPv4ヘッダーの検証
+    let ipv4hdr: *const Ipv4Hdr = unsafe { ptr_at(ctx, EthHdr::LEN)? };
     if unsafe { (*ipv4hdr).proto } != IpProto::Tcp {
         return Ok(xdp_action::XDP_PASS);
     }
 
-    let tot_len = u16::from_be(unsafe { (*ipv4hdr).tot_len });
-    let headers_len = EthHdr::LEN as u16 + Ipv4Hdr::LEN as u16 + TcpHdr::LEN as u16;
-    
-    if tot_len < headers_len {
-        return Ok(xdp_action::XDP_PASS);
-    }
-    
-    let payload_size = (tot_len - headers_len) as usize;
-    let payload_offset = EthHdr::LEN + Ipv4Hdr::LEN + TcpHdr::LEN;
-    
-    // サーバーからのパケットサイズチェック (430 ± 10 バイト)
-    if payload_size >= 420 && payload_size <= 440 {
-        if check_payload_for_jsonrpc_hex(&ctx, payload_offset, payload_size)? {
-            info!(&ctx, "Dropping server packet containing 'jsonrpc' in hex");
-            return Ok(xdp_action::XDP_DROP);
-        }
+    // TCPヘッダーの取得
+    let tcphdr: *const TcpHdr = unsafe { ptr_at(ctx, EthHdr::LEN + Ipv4Hdr::LEN)? };
+    let dest_port = u16::from_be(unsafe { (*tcphdr).dest });
+    let src_port = u16::from_be(unsafe { (*tcphdr).source });
+
+    // マイニングプールのポート番号をチェック
+    if !MINING_PORTS.contains(&dest_port) && !MINING_PORTS.contains(&src_port) {
         return Ok(xdp_action::XDP_PASS);
     }
 
-    // クライアントからのパケットサイズチェック (66 ± 10 バイト)
-    if payload_size >= 56 && payload_size <= 76 {
-        info!(&ctx, "Passing client packet with size: {}", payload_size);
-        return Ok(xdp_action::XDP_PASS);
-    }
-    
-    info!(&ctx, "Dropping packet with unexpected size: {}", payload_size);
+    // パケットサイズの計算
+    let tot_len = u16::from_be(unsafe { (*ipv4hdr).tot_len });
+    let headers_len = EthHdr::LEN as u16 + Ipv4Hdr::LEN as u16 + TcpHdr::LEN as u16;
+    let payload_size = (tot_len - headers_len) as usize;
+
+    info!(ctx, "マイニング通信を検出: ポート {} -> {} のパケットをドロップ (サイズ={} バイト)", src_port, dest_port, payload_size);
     Ok(xdp_action::XDP_DROP)
 }
 
-#[inline(always)]
-fn check_payload_for_jsonrpc_hex(ctx: &XdpContext, offset: usize, size: usize) -> Result<bool, ()> {
-    let jsonrpc_hex =[0x6a, 0x73, 0x6f, 0x6e, 0x72, 0x70, 0x63, 0x20, // "jsonrpc "
-    0x32, 0x2e, 0x30, 0x20,                         // "2.0 "
-    0x6d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x20,       // "method "
-    0x73, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x20,       // "submit "
-    0x70, 0x61, 0x72, 0x61, 0x6d, 0x73              // "params"
-	]; 
-    let mut match_index = 0;
-    let inspect_bytes = core::cmp::min(size, MAX_INSPECT_BYTES);
-
-    for i in 0..inspect_bytes {
-        let byte: u8 = unsafe { *ptr_at::<u8>(ctx, offset + i)? };
-        
-        if byte == jsonrpc_hex[match_index] {
-            match_index += 1;
-            if match_index == jsonrpc_hex.len() {
-                return Ok(true);
-            }
-        } else {
-            match_index = 0;
-        }
-    }
-
-    Ok(false)
-}
-
+/// メモリ安全なポインタアクセス
 #[inline(always)]
 unsafe fn ptr_at<T>(ctx: &XdpContext, offset: usize) -> Result<*const T, ()> {
     let start = ctx.data();
@@ -94,6 +63,7 @@ unsafe fn ptr_at<T>(ctx: &XdpContext, offset: usize) -> Result<*const T, ()> {
     Ok((start + offset) as *const T)
 }
 
+/// パニックハンドラー
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     loop {}

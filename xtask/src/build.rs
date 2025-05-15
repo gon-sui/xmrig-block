@@ -5,22 +5,26 @@ use clap::Parser;
 
 use crate::build_ebpf::{build_ebpf, Architecture, Options as BuildOptions};
 
+/// ビルドオプションを定義する構造体
 #[derive(Debug, Parser)]
 pub struct Options {
-    /// Set the endianness of the BPF target
+    /// BPFターゲットのエンディアンを設定
     #[clap(default_value = "bpfel-unknown-none", long)]
     pub bpf_target: Architecture,
-    /// Build and run the release target
+    /// リリースビルドを実行
     #[clap(long)]
     pub release: bool,
 }
 
-/// Build the project
+/// ユーザースペースアプリケーションをビルドする関数
 fn build_project(opts: &Options) -> Result<(), anyhow::Error> {
+    // ビルドコマンドの引数を構築
     let mut args = vec!["build"];
     if opts.release {
         args.push("--release")
     }
+    
+    // cargoコマンドを実行
     let status = Command::new("cargo")
         .args(&args)
         .status()
@@ -29,9 +33,9 @@ fn build_project(opts: &Options) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-/// Build our ebpf program and the project
+/// eBPFプログラムとユーザースペースアプリケーションをビルドする関数
 pub fn build(opts: Options) -> Result<(), anyhow::Error> {
-    // build our ebpf program followed by our application
+    // まずeBPFプログラムをビルドし、次にアプリケーションをビルド
     build_ebpf(BuildOptions {
         target: opts.bpf_target,
         release: opts.release,
